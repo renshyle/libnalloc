@@ -1,31 +1,34 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "libnalloc.h"
+#include <libnalloc.h>
 
+#ifndef LIBNALLOC_PREALLOC_PAGES
 // this many pages will be requested in addition to the required amount when requesting memory from the operating system
 #define LIBNALLOC_PREALLOC_PAGES 16
+#endif
+
+#ifndef LIBNALLOC_DIRECT_THRESHOLD
 // allocations above this size will be directly requested from the operating system
 #define LIBNALLOC_DIRECT_THRESHOLD 32768
+#endif
 
 // these four functions need to be implemented for libnalloc to work
 
 // allocates `pages` * `LIBNALLOC_PAGE_SIZE` amount of contiguous memory
 // the address returned must be aligned to LIBNALLOC_ALIGNMENT
 // returns NULL on error
-static void *libnalloc_alloc(size_t pages);
+void *libnalloc_alloc(size_t pages);
 
 // frees `pages` * `LIBNALLOC_PAGE_SIZE` amount of memory starting at ptr
 // `ptr` is a value previously returned by `libnalloc_alloc`
-static void libnalloc_free(void *ptr, size_t pages);
+void libnalloc_free(void *ptr, size_t pages);
 
 // locks the memory allocator
-static void libnalloc_lock(void);
+void libnalloc_lock(void);
 
 // unlocks the memory allocator
-static void libnalloc_unlock(void);
-
-#define LIBNALLOC_PAGE_SIZE 4096
+void libnalloc_unlock(void);
 
 #define LIBNALLOC_ALIGNMENT 16
 
@@ -370,33 +373,3 @@ void *aligned_alloc(size_t alignment, size_t size)
 
 // linux implementation
 
-#include <pthread.h>
-#include <sys/mman.h>
-
-static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static void libnalloc_lock(void)
-{
-    pthread_mutex_lock(&mutex);
-}
-
-static void libnalloc_unlock(void)
-{
-    pthread_mutex_unlock(&mutex);
-}
-
-static void *libnalloc_alloc(size_t pages)
-{
-    void *address = mmap(0, pages * LIBNALLOC_PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-    if (address == MAP_FAILED) {
-        return NULL;
-    }
-
-    return address;
-}
-
-static void libnalloc_free(void *ptr, size_t pages)
-{
-    munmap(ptr, pages * LIBNALLOC_PAGE_SIZE);
-}

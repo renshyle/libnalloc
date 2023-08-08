@@ -11,7 +11,7 @@ libnalloc comes with a test suite that can be built using `make test`. The built
 
 ## Porting
 
-Porting libnalloc to another operating system is very easy as libnalloc requires only four functions to be implemented in order to work. `libnalloc.c` has a Linux implementation at the bottom which you should rewrite for your operating system, and the function prototypes near the top of the file contain essential information on the functions. You can then build a shared library for your operating system or link libnalloc statically to your operating system's programs.
+Porting libnalloc to another operating system is very easy as libnalloc requires only four functions to be implemented in order to work. The four functions are described near the top of `libnalloc.c` and `linux.c` has a reference Linux implementation which you can look at. You can then build a shared library for your operating system or link libnalloc statically to your operating system's programs.
 
 ## Supported functions
 

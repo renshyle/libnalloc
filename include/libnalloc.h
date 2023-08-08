@@ -3,6 +3,10 @@
 
 #include <stddef.h>
 
+#ifndef LIBNALLOC_PAGE_SIZE
+#define LIBNALLOC_PAGE_SIZE 4096
+#endif
+
 void *malloc(size_t size);
 void *calloc(size_t nelem, size_t elsize);
 void *realloc(void *ptr, size_t size);
