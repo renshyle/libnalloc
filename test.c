@@ -1,5 +1,7 @@
 #include <signal.h>
+#include <stdalign.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +12,12 @@
 #define MAX_ITERATIONS 1000000
 #define REALLOC_PERCENTAGE 5
 #define MAGIC_BYTE 0xc9
+
+#ifdef __alignof_is_defined
+#define EXPECTED_ALIGNMENT _Alignof(max_align_t)
+#else
+#define EXPECTED_ALIGNMENT 1
+#endif
 
 int running = 1;
 
@@ -41,6 +49,7 @@ int main()
     size_t total_overwritten_bytes = 0;
     size_t total_overwritten_regions = 0;
     size_t reallocation_errors = 0;
+    size_t alignment_errors = 0;
     size_t iterations = 0;
 
     printf("memory allocation tester\n");
@@ -75,6 +84,11 @@ int main()
             size_t new_size = rand() % MAX_ALLOC_SIZE;
             unsigned char *new_element = realloc(element, new_size);
 
+            if ((uintptr_t) new_element % EXPECTED_ALIGNMENT != 0) {
+                printf("realloc error: expected alignment %lu, got %d\n", EXPECTED_ALIGNMENT, (1 << (ffsll((uintptr_t) new_element) - 1)));
+                alignment_errors++;
+            }
+
             overwritten_bytes = check_region(new_element, array_sizes[i] > new_size ? new_size : array_sizes[i]);
 
             if (overwritten_bytes > 0) {
@@ -96,6 +110,11 @@ int main()
                         int size = rand() % MAX_ALLOC_SIZE;
                         array[i] = malloc(size);
                         array_sizes[i] = size;
+
+                        if ((uintptr_t) array[i] % EXPECTED_ALIGNMENT != 0) {
+                            printf("malloc error: expected alignment %lu, got %d\n", EXPECTED_ALIGNMENT, (1 << (ffsll((uintptr_t) array[i]) - 1)));
+                            alignment_errors++;
+                        }
 
                         // fill the allocated area with MAGIC_BYTE
                         memset(array[i], MAGIC_BYTE, size);
@@ -169,4 +188,5 @@ int main()
     printf("total bytes overwritten: %zu\n", total_overwritten_bytes);
     printf("total regions overwritten: %zu\n", total_overwritten_regions);
     printf("total reallocation errors: %zu\n", reallocation_errors);
+    printf("total alignment errors: %zu\n", alignment_errors);
 }
