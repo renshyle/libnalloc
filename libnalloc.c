@@ -367,9 +367,10 @@ void *aligned_alloc(size_t alignment, size_t size)
         return NULL;
     }
 
+    if (alignment <= LIBNALLOC_ALIGNMENT) {
+        return malloc(size);
+    }
+
     // easier to just do a direct allocation regardless of size
     return alloc_direct(size, alignment);
 }
-
-// linux implementation
-
