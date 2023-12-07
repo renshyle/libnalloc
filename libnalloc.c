@@ -34,6 +34,14 @@ void libnalloc_unlock(void);
 
 #define LIBNALLOC_MIN_ALLOC sizeof(struct free_block_data)
 
+#ifndef LIBNALLOC_PREFIX
+#define LIBNALLOC_PREFIX
+#endif
+
+#define PASTER(x, y) x ## y
+#define EVALUATOR(x, y) PASTER(x, y)
+#define LIBNALLOC_EXPORT(name) EVALUATOR(LIBNALLOC_PREFIX, name)
+
 void *memset(void *s, int c, size_t n);
 void *memcpy(void *restrict s1, const void *restrict s2, size_t n);
 
@@ -155,7 +163,7 @@ static void *alloc_direct(size_t size, size_t alignment)
     return block + 1;
 }
 
-void *malloc(size_t size)
+void *LIBNALLOC_EXPORT(malloc)(size_t size)
 {
     if (size == 0) {
         return NULL;
@@ -226,7 +234,7 @@ void *malloc(size_t size)
     return (void*) ((uintptr_t) chunk + sizeof(struct chunk_header) + sizeof(struct block_header));
 }
 
-void *calloc(size_t nelem, size_t elsize)
+void *LIBNALLOC_EXPORT(calloc)(size_t nelem, size_t elsize)
 {
     void *tgt = malloc(nelem * elsize);
 
@@ -237,7 +245,7 @@ void *calloc(size_t nelem, size_t elsize)
     return tgt;
 }
 
-void *realloc(void *ptr, size_t size)
+void *LIBNALLOC_EXPORT(realloc)(void *ptr, size_t size)
 {
     // some programs (namely grep) take issue with realloc(NULL, 0) returning a NULL pointer
     if (size == 0 && ptr == NULL) {
@@ -257,7 +265,7 @@ void *realloc(void *ptr, size_t size)
     return tgt;
 }
 
-void free(void *ptr)
+void LIBNALLOC_EXPORT(free)(void *ptr)
 {
     if (ptr == NULL) {
         return;
@@ -353,7 +361,7 @@ void free(void *ptr)
     libnalloc_unlock();
 }
 
-int posix_memalign(void **memptr, size_t alignment, size_t size)
+int LIBNALLOC_EXPORT(posix_memalign)(void **memptr, size_t alignment, size_t size)
 {
     void *ptr = aligned_alloc(alignment, size);
     *memptr = ptr;
@@ -361,7 +369,7 @@ int posix_memalign(void **memptr, size_t alignment, size_t size)
     return 0;
 }
 
-void *aligned_alloc(size_t alignment, size_t size)
+void *LIBNALLOC_EXPORT(aligned_alloc)(size_t alignment, size_t size)
 {
     if (size == 0 || alignment == 0) {
         return NULL;
