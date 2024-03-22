@@ -38,9 +38,12 @@ void libnalloc_unlock(void);
 #define LIBNALLOC_PREFIX
 #endif
 
-#define PASTER(x, y) x ## y
-#define EVALUATOR(x, y) PASTER(x, y)
-#define LIBNALLOC_EXPORT(name) EVALUATOR(LIBNALLOC_PREFIX, name)
+#define LIBNALLOC_MALLOC LIBNALLOC_EXPORT(malloc)
+#define LIBNALLOC_CALLOC LIBNALLOC_EXPORT(calloc)
+#define LIBNALLOC_REALLOC LIBNALLOC_EXPORT(realloc)
+#define LIBNALLOC_FREE LIBNALLOC_EXPORT(free)
+#define LIBNALLOC_POSIX_MEMALIGN LIBNALLOC_EXPORT(posix_memalign)
+#define LIBNALLOC_ALIGNED_ALLOC LIBNALLOC_EXPORT(aligned_alloc)
 
 void *memset(void *s, int c, size_t n);
 void *memcpy(void *restrict s1, const void *restrict s2, size_t n);
@@ -236,7 +239,7 @@ void *LIBNALLOC_EXPORT(malloc)(size_t size)
 
 void *LIBNALLOC_EXPORT(calloc)(size_t nelem, size_t elsize)
 {
-    void *tgt = malloc(nelem * elsize);
+    void *tgt = LIBNALLOC_MALLOC(nelem * elsize);
 
     if (tgt != NULL) {
         memset(tgt, 0, nelem * elsize);
@@ -252,14 +255,14 @@ void *LIBNALLOC_EXPORT(realloc)(void *ptr, size_t size)
         size = LIBNALLOC_MIN_ALLOC;
     }
 
-    void *tgt = malloc(size);
+    void *tgt = LIBNALLOC_MALLOC(size);
 
     if (tgt != NULL && ptr != NULL) {
         struct block_header *block = (struct block_header*) ((uintptr_t) ptr - sizeof(struct block_header));
         size_t old_data_size = block->size * LIBNALLOC_ALIGNMENT - 2 * sizeof(struct block_header);
 
         memcpy(tgt, ptr, size > old_data_size ? old_data_size : size);
-        free(ptr);
+        LIBNALLOC_FREE(ptr);
     }
 
     return tgt;
@@ -363,7 +366,7 @@ void LIBNALLOC_EXPORT(free)(void *ptr)
 
 int LIBNALLOC_EXPORT(posix_memalign)(void **memptr, size_t alignment, size_t size)
 {
-    void *ptr = aligned_alloc(alignment, size);
+    void *ptr = LIBNALLOC_ALIGNED_ALLOC(alignment, size);
     *memptr = ptr;
 
     return 0;
@@ -376,7 +379,7 @@ void *LIBNALLOC_EXPORT(aligned_alloc)(size_t alignment, size_t size)
     }
 
     if (alignment <= LIBNALLOC_ALIGNMENT) {
-        return malloc(size);
+        return LIBNALLOC_MALLOC(size);
     }
 
     // easier to just do a direct allocation regardless of size
